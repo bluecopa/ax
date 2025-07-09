@@ -9,6 +9,7 @@ import type {
   AxChatRequest,
   AxChatResponseResult,
   AxFunctionResult,
+  AxLoggerFunction,
 } from '../ai/types.js'
 import {
   axValidateChatRequestMessage,
@@ -24,6 +25,7 @@ export class MemoryImpl {
     private options?: {
       debug?: boolean
       debugHideSystemPrompt?: boolean
+      logger?: AxLoggerFunction
     }
   ) {}
 
@@ -39,7 +41,11 @@ export class MemoryImpl {
     )
 
     if (this.options?.debug) {
-      debugRequest(items, this.options?.debugHideSystemPrompt)
+      debugRequest(
+        items,
+        this.options?.debugHideSystemPrompt,
+        this.options?.logger
+      )
     }
   }
 
@@ -57,7 +63,7 @@ export class MemoryImpl {
     }
 
     if (this.options?.debug) {
-      debugFunctionResults(results)
+      debugFunctionResults(results, this.options?.logger)
     }
   }
 
@@ -71,7 +77,7 @@ export class MemoryImpl {
 
     if (this.options?.debug) {
       for (const result of results) {
-        debugResponse(result)
+        debugResponse(result, this.options?.logger)
       }
     }
   }
@@ -88,9 +94,12 @@ export class MemoryImpl {
     const log = () => {
       if (this.options?.debug) {
         if (delta && typeof delta === 'string') {
-          debugResponseDelta(delta)
+          debugResponseDelta(delta, this.options?.logger)
         } else if (!delta && (content || functionCalls)) {
-          debugResponse({ content, name, functionCalls, index })
+          debugResponse(
+            { content, name, functionCalls, index },
+            this.options?.logger
+          )
         }
       }
     }
@@ -224,6 +233,7 @@ export class AxMemory implements AxAIMemory {
     private options?: {
       debug?: boolean
       debugHideSystemPrompt?: boolean
+      logger?: AxLoggerFunction
     }
   ) {
     this.defaultMemory = new MemoryImpl(options)
@@ -297,25 +307,30 @@ export class AxMemory implements AxAIMemory {
 
 function debugRequest(
   value: AxChatRequest['chatPrompt'][number] | AxChatRequest['chatPrompt'],
-  hideSystemPrompt?: boolean
+  hideSystemPrompt?: boolean,
+  logger?: AxLoggerFunction
 ) {
   if (Array.isArray(value)) {
-    logChatRequest(value, hideSystemPrompt)
+    logChatRequest(value, hideSystemPrompt, logger)
   } else {
-    logChatRequestMessage(value, hideSystemPrompt)
+    logChatRequestMessage(value, hideSystemPrompt, logger)
   }
 }
 
 function debugResponse(
-  value: Readonly<AxChatResponseResult & { index: number }>
+  value: Readonly<AxChatResponseResult & { index: number }>,
+  logger?: AxLoggerFunction
 ) {
-  logResponseResult(value)
+  logResponseResult(value, logger)
 }
 
-function debugResponseDelta(delta: string) {
-  logResponseDelta(delta)
+function debugResponseDelta(delta: string, logger?: AxLoggerFunction) {
+  logResponseDelta(delta, logger)
 }
 
-function debugFunctionResults(results: Readonly<AxFunctionResult[]>) {
-  logFunctionResults(results)
+function debugFunctionResults(
+  results: Readonly<AxFunctionResult[]>,
+  logger?: AxLoggerFunction
+) {
+  logFunctionResults(results, logger)
 }

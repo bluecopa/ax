@@ -406,6 +406,7 @@ export class AxGen<
     const memOptions = {
       debug: this.isDebug(ai, options),
       debugHideSystemPrompt,
+      logger: this.getLogger(ai, options),
     }
 
     const mem = options.mem ?? this.options?.mem ?? new AxMemory(memOptions)
